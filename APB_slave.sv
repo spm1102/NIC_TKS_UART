@@ -20,10 +20,10 @@ module APB_slave(
     output logic [11:0] waddr,
     output logic [11:0] raddr,
     output logic [31:0] wdata,
-    output logic wr_en
-   // output logic rd_en
+    output logic wr_en,
+    output logic rd_en
 );
-logic rd_en;
+// logic rd_en;
 //wdata
 logic [31:0] wdata_next;
 logic [31:0] pwdata_next;
