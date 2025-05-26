@@ -31,14 +31,14 @@ logic [3:0] num_data;
 logic [1:0] num_stop;
 
 logic start_send;
-logic [3:0] count_data;
-logic [1:0] count_stop;
-logic [2:0] count_data_bit1;
+logic [3:0] count_data; // dem so chu ki o trang thai data
+logic [1:0] count_stop; // dem so chu ki o trang thai stop
+logic [2:0] count_data_bit1; // dem so bit 1 de tinh parity
 
 
-logic parity_bit;
+logic parity_bit; // bit parity
 
-logic [3:0] tick_cnt;
+logic [3:0] tick_cnt; // dem so tick de truyen data (du 16 tick thi moi truyen 1 bit)
 
 // Mach com giai ma dau vao 
 always_comb begin
@@ -67,10 +67,10 @@ always_comb begin
     end
     
 end
-
+// khi co start tx voi ben kia chuan bi nhan (cts_n) thi moi gui 
 assign start_send = start_tx & (~cts_n) ;
 
-assign rts_n = ~start_send;
+assign rts_n = ~start_send; // tin hieu nay chua nho, cap nhat sau
 
 // Mach com tinh toan trang thai tiep theo
 always_comb begin
@@ -194,6 +194,7 @@ always_comb begin
     end
     endcase 
 end
+// mach xu li tx_done
 always_ff @(posedge clk or negedge rst_n ) begin 
     if(~rst_n) tx_done <= 0;
     else begin
