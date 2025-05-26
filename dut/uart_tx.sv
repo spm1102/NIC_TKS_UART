@@ -70,43 +70,49 @@ end
 
 assign start_send = start_tx & (~cts_n) ;
 
-assign rts_n = ~start_tx;
+assign rts_n = ~start_send;
 
 // Mach com tinh toan trang thai tiep theo
 always_comb begin
-    if (tick) begin
-            case (current_state)
+        case (current_state)
             IDLE: begin
                 if (start_send) next_state = START;
-                else next_state = IDLE;
+                else begin end;
             end
             START: begin
-                if (tick_cnt == 4'b1111) begin 
-                next_state = DATA;
-                end
+                if (tick) begin
+                    if (tick_cnt == 4'b1111) begin 
+                        next_state = DATA;
+                    end
+                    else begin end
+                end 
                 else begin end
             end
             DATA: begin
-                if (tick_cnt == 4'b1111) begin 
-                    if (count_data == num_data + parity_en - 1) next_state = STOP;
-                    else next_state = DATA;
+                if (tick) begin
+                    if (tick_cnt == 4'b1111) begin 
+                        if (count_data == num_data + parity_en - 1) next_state = STOP;
+                        else next_state = DATA;
+                    end
+                    else begin end
                 end
                 else begin end
             end
             STOP: begin
-                if (tick_cnt == 4'b1111) begin 
-                    if (count_stop == num_stop - 1) next_state = IDLE;
-                    else next_state = STOP;
+                if (tick) begin
+                    if (tick_cnt == 4'b1111) begin 
+                        if (count_stop == num_stop - 1) next_state = IDLE;
+                        else next_state = STOP;
+                    end
+                    else begin end
                 end
                 else begin end
             end
             default: begin
                 next_state = IDLE;
             end
-            endcase 
+        endcase 
 
-    end
-    else begin end
 end
 
 // Mach ff chuyen trang thai

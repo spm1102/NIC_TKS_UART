@@ -65,7 +65,7 @@ module Resgistor_block(
     assign mux_stt     [0]                      =  tx_done;
     assign mux_stt     [1]                      =  rx_done;
     assign mux_stt     [2]                      =  parity_error;
-    assign mux_stt     [31:3]                   =  parity_error;
+    assign mux_stt     [31:3]                   =  '0;
      
     assign tx_data_reg_wen                      = wr_en & (waddr == 32'b0);
 
