@@ -10,10 +10,8 @@ module uart_rx(
     input               parity_en,
     input               parity_type,
 
-    input               rts_n,
-
     output logic        rx_done,
-    output logic        cts_n,
+    output logic        rts_n,
     output logic        parity_error,
     output logic [7:0]  rx_data
 );
@@ -26,13 +24,13 @@ logic [1:0] num_stop;
 
 logic [3:0] count_data;
 logic [1:0] count_stop;
-logic [2:0] count_data_bit1;
+// logic [2:0] count_data_bit1;
 logic [3:0] tick_cnt;
 
 logic parity_bit;
 logic [7:0] data_shift;
 
-assign cts_n = rts_n; // cts_n = 1 khi ben kia chua san sang nhan
+// assign cts_n = rts_n; // cts_n = 1 khi ben kia chua san sang nhan
 
 // Mach com giai ma dau vao
 always_comb begin
@@ -61,14 +59,17 @@ end
 always_comb begin
     case (current_state)
         IDLE: begin
-            if (~rx & ~rts_n) next_state = START;
-            else next_state = IDLE;
+            if (~rx ) next_state = START;
+            // else next_state = IDLE;
+            else begin end
+            rts_n = 0;
         end
         START: begin
             if (tick) begin
-                if (tick_cnt == 4'b1111) next_state = DATA;
+                if (tick_cnt == 4'b0111) next_state = DATA;
                 else next_state = START;
             end else next_state = START;
+            rts_n = 1;
         end
         DATA: begin
             if (tick) begin
@@ -77,6 +78,7 @@ always_comb begin
                     else next_state = DATA;
                 end else next_state = DATA;
             end else next_state = DATA;
+            rts_n = 1;
         end
         STOP: begin
             if (tick) begin
@@ -85,8 +87,12 @@ always_comb begin
                     else next_state = STOP;
                 end else next_state = STOP;
             end else next_state = STOP;
+            rts_n = 1;
         end
-        default: next_state = IDLE;
+        default: begin 
+            rts_n = 1;
+            next_state = IDLE;
+        end
     endcase
 end
 
@@ -102,32 +108,59 @@ always_ff @(posedge clk or negedge rst_n) begin
     if (~rst_n) begin
         count_data <= 0;
         count_stop <= 0;
-        count_data_bit1 <= 0;
+        // count_data_bit1 <= 0;
         tick_cnt <= 0;
         data_shift <= 0;
     end else if (tick) begin
         if (tick_cnt == 4'b1111) begin
             case (current_state)
+                IDLE: begin
+                    count_data <= 0;
+                    count_stop <= 0;
+                    // count_data_bit1 <= 0;
+                    tick_cnt <= 0;
+                    data_shift <= 0;
+                end
+                START: begin
+                end
                 DATA: begin
                     data_shift[count_data] <= rx;
-                    if (rx) count_data_bit1 <= count_data_bit1 + 1;
+                    // if (rx) count_data_bit1 <= count_data_bit1 + 1;
                     count_data <= count_data + 1;
                     tick_cnt <= 0;
                 end
                 STOP: begin
+                    if (next_state == IDLE) begin
+                        count_stop <= 0;
+                        count_data <= 0;
+                        // count_data_bit1 <= 0;
+                        tick_cnt <= 0;
+                    end
+                    else begin
+
                     count_stop <= count_stop + 1;
                     count_data <= 0;
-                    count_data_bit1 <= 0;
+                    // count_data_bit1 <= 0;
                     tick_cnt <= 0;
+                    end
                 end
                 default: begin
                     count_stop <= 0;
                     count_data <= 0;
-                    count_data_bit1 <= 0;
+                    // count_data_bit1 <= 0;
                     tick_cnt <= 0;
                 end
             endcase
-        end else tick_cnt <= tick_cnt + 1;
+        end
+        else  begin
+            case (current_state) 
+                START: begin
+                    if (next_state == DATA) tick_cnt <= 0;
+                    else tick_cnt <= tick_cnt + 1;
+                end
+                default: tick_cnt <= tick_cnt + 1;
+            endcase
+        end
     end
 end
 
