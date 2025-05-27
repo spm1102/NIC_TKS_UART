@@ -14,8 +14,8 @@ module uart_rx(
 
     output logic        rx_done,
     output logic        cts_n,
-    output              parity_error,
-    output [7:0]        rx_data
+    output logic        parity_error,
+    output logic [7:0]  rx_data
 );
 typedef enum logic [2:0] {IDLE, START, DATA, PARITY, STOP, DONE} state_t;
 state_t current_state, next_state;
@@ -27,10 +27,10 @@ logic [1:0] num_stop;
 logic [3:0] count_data;
 logic [1:0] count_stop;
 
-logic [2:0] tick_cnt;
+logic [4:0] tick_cnt;
 logic [7:0] rx_shift;
 logic parity_calc;
-logic paraty_bit;
+logic parity_bit;
 
 always_comb begin
     case (data_bit_num) 
@@ -56,27 +56,29 @@ always_comb begin
         end
 
         START: begin
-            if (tick && tick_cnt == 3) //mid of start bit
+            if (tick && tick_cnt == 7) //mid of start bit
                 next_state = DATA;
         end
 
         DATA: begin
-            if(tick && tick_cnt == 7 && count_data == num_data)
+            if(tick && tick_cnt == 15 && count_data == num_data)
                 next_state = (parity_en) ? PARITY : STOP;
         end
 
         PARITY: begin
-            if( tick && tick_cnt == 7)
+            if( tick && tick_cnt == 15)
                 next_state = STOP;
         end
 
         STOP: begin
-            if(tick && tick_cnt == 7 && count_stop == num_stop)
+            if(tick && tick_cnt == 15 && count_stop == num_stop)
                 next_state = DONE;
         end
 
         DONE: begin
             next_state = IDLE;
+        end
+        default: begin
         end
     endcase
 end
@@ -93,7 +95,11 @@ always_ff @(posedge clk or negedge rst_n) begin
     else if(tick) begin
         if(current_state == IDLE)
             tick_cnt <= 0;
-        else if(tick_cnt == 7)
+        else if (current_state == START) begin
+            if (next_state == DATA) tick_cnt <= 0;
+            else tick_cnt <= tick_cnt + 1;
+        end
+        else if(tick_cnt == 15)
             tick_cnt <= 0;
         else
             tick_cnt <= tick_cnt + 1;
@@ -103,16 +109,19 @@ end
 //Data bit counter
 always_ff @(posedge clk or negedge rst_n) begin
     if(!rst_n) count_data <= 0;
-    else if (current_state == DATA && tick && tick_cnt == 7)
+    else if (current_state == DATA && tick && tick_cnt == 15)
         count_data <= count_data + 1;
     else if (current_state == START)
         count_data <= 0;
+    if(current_state == IDLE)
+        count_data <= 0;
+    
 end
 
 //Stop bit counter
 always_ff @(posedge clk or negedge rst_n) begin
     if(!rst_n) count_stop <= 0;
-    else if (current_state == STOP && tick && tick_cnt == 7)
+    else if (current_state == STOP && tick && tick_cnt == 15)
         count_stop <= count_stop + 1;
     else if (current_state == IDLE)
         count_stop <= 0;
@@ -121,8 +130,10 @@ end
 // Shift register for RX data
 always_ff @(posedge clk or negedge rst_n) begin
     if(!rst_n) rx_shift <= 0;
-    else if (current_state == DATA && tick && tick_cnt == 7)
-        rx_shift[count_data]  <= rx;
+    else if (current_state == DATA && tick && tick_cnt == 15)
+        if (next_state == STOP) begin end
+        else rx_shift[count_data]  <= rx;
+    if(current_state == IDLE) rx_shift <= 0;
 end
 
 //Parity calculation
@@ -130,20 +141,29 @@ always_ff @(posedge clk or negedge rst_n) begin
     if(!rst_n) parity_calc <= 0;
     else if(current_state == START)
         parity_calc <= 0;
-    else if( current_state == DATA && tick && tick_cnt == 7)
+    else if( current_state == DATA && tick && tick_cnt == 15)
         parity_calc <= parity_calc ^ rx;
+    if (current_state == IDLE)parity_calc <= 0;
 end
 
 //Parity checking
 always_ff @(posedge clk or negedge rst_n) begin
-    if(!rst_n) parity_error <= 0;
-    else if(current_state == PARITY && tick && tick_cnt == 7) begin
+    if(!rst_n)begin
+         parity_error <= 0;
+         parity_bit <= 0;
+    end
+    else if(current_state == PARITY && tick && tick_cnt == 15) begin
         if(parity_type)
-            parity_bit = ~parity_calc;
+            parity_bit <= ~parity_calc;
         else
-            parity_bit = parity_calc;
+            parity_bit <= parity_calc;
 
-        parity_error <= (rx != paraty_bit);
+        parity_error <= (rx != parity_bit);
+    end
+    if (current_state == IDLE) begin
+        parity_bit <= 0;
+        parity_error <= 0;
+
     end
 end
 
