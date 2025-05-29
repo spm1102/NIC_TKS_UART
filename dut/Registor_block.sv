@@ -12,6 +12,7 @@ module Resgistor_block(
     input                               tx_done,
     input                               rx_done,
     input                               parity_error,
+    input                               start_tx_down,
 
     output logic    [7:0]               tx_data,
 
@@ -67,17 +68,17 @@ module Resgistor_block(
     assign mux_stt     [2]                      =  parity_error;
     assign mux_stt     [31:3]                   =  '0;
      
-    assign tx_data_reg_wen                      = wr_en & (waddr == 32'b0);
+    // assign tx_data_reg_wen                      = wr_en & (waddr == 32'b0);
 
-    assign cfg_reg_wen                          = wr_en & (waddr == 32'b1000);                                                           
-    assign ctrl_reg_wen                         = wr_en & (waddr == 32'b1100);                                                                          
+    // assign cfg_reg_wen                          = wr_en & (waddr == 32'b1000);                                                           
+    // assign ctrl_reg_wen                         = wr_en & (waddr == 32'b1100);                                                                          
 
 
-    assign tx_data_reg_ren                      = rd_en & (raddr == 32'b0);
-    assign rx_data_reg_ren                      = rd_en & (raddr == 32'b100);
-    assign cfg_reg_ren                          = rd_en & (raddr == 32'b1000);                                                           
-    assign ctrl_reg_ren                         = rd_en & (raddr == 32'b1100);                                                                          
-    assign stt_reg_ren                          = rd_en & (raddr == 32'b10000);
+    // assign tx_data_reg_ren                      = rd_en & (raddr == 32'b0);
+    // assign rx_data_reg_ren                      = rd_en & (raddr == 32'b100);
+    // assign cfg_reg_ren                          = rd_en & (raddr == 32'b1000);                                                           
+    // assign ctrl_reg_ren                         = rd_en & (raddr == 32'b1100);                                                                          
+    // assign stt_reg_ren                          = rd_en & (raddr == 32'b10000);
 
     assign waddrerr                             = !((waddr == 32'b0) | (waddr == 32'b1000) | (waddr == 32'b1100));
     assign raddrerr                             = !((raddr == 32'b0) | (raddr == 32'b1000) | (raddr == 32'b1100) | (raddr == 32'b100) | (raddr == 32'b10000));
@@ -92,6 +93,7 @@ module Resgistor_block(
             start_tx                            <= 1'b0;
             rdata                               <= 32'b0;
         end
+        else if (start_tx_down) start_tx <= 0;
         else if (wr_en) begin
             case (waddr) 
                 32'b0: tx_data                  <= wdata[7:0];

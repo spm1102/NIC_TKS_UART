@@ -14,8 +14,8 @@ module top#(parameter baurate = 9600)(
     input               cts_n,
 
     output logic        tx,
-    output logic        tx_done,
-    output logic        rts_n
+    output logic        tx_done
+    // output logic        rts_n
 );
 logic tick;
 uart_tx uart_tx_inst (
@@ -31,7 +31,7 @@ uart_tx uart_tx_inst (
     .cts_n(cts_n),
     .tx(tx),
     .tx_done(tx_done),
-    .rts_n(rts_n)
+    // .rts_n(rts_n)
 );
 baud_generator baud_generator_inst(
     .clk(clk),

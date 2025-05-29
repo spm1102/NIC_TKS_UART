@@ -15,7 +15,9 @@ module uart_tx(
 
     output logic        tx,
     output logic        tx_done,
-    output logic        rts_n
+
+    output logic        start_tx_down
+    // output logic        rts_n
 
 );
 typedef enum {IDLE, START, DATA, STOP} state_t;
@@ -33,7 +35,7 @@ logic [1:0] num_stop;
 logic start_send;
 logic [3:0] count_data; // dem so chu ki o trang thai data
 logic [1:0] count_stop; // dem so chu ki o trang thai stop
-logic [2:0] count_data_bit1; // dem so bit 1 de tinh parity
+// logic [2:0] count_data_bit1; // dem so bit 1 de tinh parity
 
 
 logic parity_bit; // bit parity
@@ -57,20 +59,15 @@ always_comb begin
 end
 
 always_comb begin
-    if (parity_type) begin
-        if (count_data_bit1[0]) parity_bit = 0;
-        else parity_bit = 1;
-    end
-    else begin
-        if (count_data_bit1[0]) parity_bit = 1;
-        else parity_bit = 0;
-    end
-    
+    if (~parity_type) // odd parity
+        parity_bit = ~^tx_data;
+    else             // even parity
+        parity_bit = ^tx_data;
 end
 // khi co start tx voi ben kia chuan bi nhan (cts_n) thi moi gui 
 assign start_send = start_tx & (~cts_n) ;
 
-assign rts_n = ~start_send; // tin hieu nay chua nho, cap nhat sau
+// assign rts_n = ~start_send; // tin hieu nay chua nho, cap nhat sau
 
 // Mach com tinh toan trang thai tiep theo
 always_comb begin
@@ -129,7 +126,7 @@ always_ff @(posedge clk or negedge rst_n) begin
     if (~rst_n) begin
         count_data <= 0;
         count_stop <= 0;
-        count_data_bit1 <= 0;
+        // count_data_bit1 <= 0;
         tick_cnt <= 0;
     end
     else begin
@@ -137,17 +134,9 @@ always_ff @(posedge clk or negedge rst_n) begin
             if (tick_cnt == 4'b1111)begin
                 case (current_state) 
                 DATA: begin
-                    if (tx_data[count_data]) begin
-                        count_data_bit1 <= count_data_bit1 + 1;
-                        count_data <= count_data + 1;
-                        count_stop <= 0;
-                        tick_cnt <= 0;                
-                    end
-                    else begin
-                        count_data <= count_data + 1;
-                        count_stop <= 0;
-                        tick_cnt <= 0;  
-                    end
+                    count_data <= count_data + 1;
+                    count_stop <= 0;
+                    tick_cnt <= 0;  
                 end
                 STOP: begin
                     count_stop <= count_stop + 1;
@@ -157,7 +146,6 @@ always_ff @(posedge clk or negedge rst_n) begin
                 default: begin
                     count_stop <= 0;
                     count_data <= 0;
-                    count_data_bit1 <= 0;
                     tick_cnt <= 0; 
 
                 end
@@ -178,19 +166,25 @@ always_comb begin
     case (current_state)
     IDLE: begin
         tx = 1;
+        if (next_state == START) start_tx_down = 1;
+        else start_tx_down = 0;
     end
     START: begin 
         tx = 0;
+        start_tx_down = 0;
     end
     DATA: begin
         if (count_data == num_data ) tx = parity_bit;
         else tx = tx_data[count_data];
+        start_tx_down = 0;
     end
     STOP: begin
         tx = 1;
+        start_tx_down = 0;
     end
     default: begin
         tx = 1;
+        start_tx_down = 0;
     end
     endcase 
 end
@@ -198,16 +192,17 @@ end
 always_ff @(posedge clk or negedge rst_n ) begin 
     if(~rst_n) tx_done <= 0;
     else begin
-        if (tick) begin
-        case (current_state) 
+        case (current_state)
+        IDLE: begin
+            tx_done <= 1;
+        end 
         STOP: begin
             if (next_state == IDLE) tx_done <= 1;
             else tx_done <= 0;
         end
         default: tx_done <= 0;
         endcase
-        end
-        else begin end
+        
     end
 end
 

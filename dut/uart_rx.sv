@@ -10,7 +10,7 @@ module uart_rx(
     input               parity_en,
     input               parity_type,
 
-    input               rts_n,
+    output logic        rts_n,
 
     output logic        rx_done,
     output logic        parity_error,
@@ -81,6 +81,16 @@ always_ff @(posedge clk or negedge rst_n) begin
         current_state <= IDLE;
     else
         current_state <= next_state;
+end
+always_comb begin
+    case (current_state) 
+        IDLE:       rts_n = 1;
+        START:      rts_n = 0;
+        DATA:       rts_n = 0;
+        PARITY:     rts_n = 0;
+        STOP:       rts_n = 0;
+        default:    rts_n = 0;
+    endcase
 end
 
 // Output and internal logic
