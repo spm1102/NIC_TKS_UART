@@ -52,23 +52,6 @@ always_ff @( posedge pclk, negedge prst_n ) begin
     end
 end
 
-//raddr
-logic [11:0] raddr_next;
-logic [11:0] praddr_next;
-
-// assign raddr_next = rd_en ? 0 : raddr;
-// assign praddr_next = (rd_en) ? paddr : raddr_next;
-// always_ff @( posedge pclk, negedge prst_n ) begin 
-//     if(~prst_n) begin
-//         raddr <= 0;
-//     end
-//     else begin
-//         raddr <= praddr_next;
-//     end
-// end
-assign raddr = rd_en ? paddr : 0;
-
-
 //wr_en
 logic wr_en_next;
 logic wr_en_2;
@@ -82,13 +65,16 @@ always_ff @( posedge pclk, negedge prst_n ) begin
         wr_en <= wr_en_2;
     end
 end
-// prdata
+
 
 //rd_en
 assign rd_en = (psel & ~pwrite & penable);
+//pready
 assign pready = wack | rack;
+//pslverr
 assign pslverr = waddrerr | raddrerr;
-
+//raddr
+assign raddr = rd_en ? paddr : 0;
 //prdata
 assign prdata = pready ? rdata : 0;
 
