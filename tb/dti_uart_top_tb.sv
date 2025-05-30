@@ -144,6 +144,7 @@ task check_rx_1(); begin
     pwdata = 0;
     paddr = 12'h04;
     @(posedge clk);
+    @(posedge clk);
     $display("%h",prdata);
 end
 endtask
@@ -250,8 +251,9 @@ initial begin
     // @(posedge clk);
 
     receive_data_with_parity(8'hB6,8,1,0); //tested
+    // check_rx_1();
     // receive_data_with_parity(8'hB6,8,0,1); //tested
-    // receive_data_with_parity(8'hDA,8,0,1); //tested
+    // // receive_data_with_parity(8'hDA,8,0,1); //tested
     // receive_data_with_parity(8'hC2,8,0,1); //tested
     // receive_data_with_parity(8'h51,8,0,1); //tested
     // receive_data_with_parity(8'h97,8,0,1); //tested
@@ -300,6 +302,7 @@ initial begin
 
     // DATA_BIT 5 EVEN PARITY AND 1 STOP BIT
     setup_reg_mode(CFG_REG_8_BIT,STOP_BIT_1,PARITY_EN,PARITY_EVEN);
+    check_rx_1();
     //check_rx;
     /////////////////////////////////////////test mode rx/////////////////////////////////
     //check_rx();

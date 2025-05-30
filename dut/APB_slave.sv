@@ -56,16 +56,17 @@ end
 logic [11:0] raddr_next;
 logic [11:0] praddr_next;
 
-assign raddr_next = rd_en ? 0 : raddr;
-assign praddr_next = (rd_en) ? paddr : raddr_next;
-always_ff @( posedge pclk, negedge prst_n ) begin 
-    if(~prst_n) begin
-        raddr <= 0;
-    end
-    else begin
-        raddr <= praddr_next;
-    end
-end
+// assign raddr_next = rd_en ? 0 : raddr;
+// assign praddr_next = (rd_en) ? paddr : raddr_next;
+// always_ff @( posedge pclk, negedge prst_n ) begin 
+//     if(~prst_n) begin
+//         raddr <= 0;
+//     end
+//     else begin
+//         raddr <= praddr_next;
+//     end
+// end
+assign raddr = rd_en ? paddr : 0;
 
 
 //wr_en

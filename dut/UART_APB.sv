@@ -136,6 +136,8 @@ uart_rx uart_rx_inst(
     .stop_bit_num(stop_bit_num),
     .parity_en(parity_en),
     .parity_type(parity_type),
+    .rd_en(rd_en),
+    .raddr(raddr),
     // .cts_n(),
     .rx_data(rx_data),
     .rx_done(rx_done),
