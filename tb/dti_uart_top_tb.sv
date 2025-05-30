@@ -145,6 +145,7 @@ task check_rx_1(); begin
     paddr = 12'h04;
     @(posedge clk);
     @(posedge clk);
+    //@(negedge uut.uart_rx_inst.rx_done);
     $display("%h",prdata);
 end
 endtask
@@ -225,6 +226,47 @@ task check_tx_done();begin
     $display("finish_tx");
 end
 endtask
+task uart_rx_virt_task(output reg [7:0] data_out);
+    integer i;
+    integer baud_clk_cycles;
+    reg [7:0] data_reg;
+begin
+    baud_clk_cycles = 10416;  // Chu kỳ 1 bit theo clock 100MHz và baudrate 9600
+    
+    // Đợi start bit (tx line kéo xuống 0)
+    wait(tx_c == 0);
+    
+    // Đợi chính giữa start bit
+    repeat(baud_clk_cycles / 2) @(posedge clk);
+    
+    // Đọc 8 bit dữ liệu (LSB first)
+    for (i = 0; i < 8; i = i + 1) begin
+        repeat(baud_clk_cycles) @(posedge clk);
+        data_reg[i] = tx_c;
+    end
+    
+    // Đọc stop bit (bỏ qua)
+    repeat(baud_clk_cycles) @(posedge clk);
+    
+    data_out = data_reg;
+    $display("RX_virt received data: %02X at time %t", data_out, $time);
+end
+endtask
+
+// --- Task để test truyền data và đợi RX ảo nhận ---
+task test_tx_data(input [7:0] tx_data);
+    reg [7:0] rx_data;
+begin
+    $display("Sending TX data: %02X at time %t", tx_data, $time);
+    setup_tx_mode(tx_data);
+    uart_rx_virt_task(rx_data);
+    if (rx_data !== tx_data) begin
+        $display("ERROR: RX data %02X does not match TX data %02X", rx_data, tx_data);
+    end else begin
+        $display("SUCCESS: RX data matches TX data");
+    end
+end
+endtask
 // test rx
 initial begin
     //////////////////////////////////////test rx ///////////////////////////
@@ -254,7 +296,7 @@ initial begin
     // check_rx_1();
     // receive_data_with_parity(8'hB6,8,0,1); //tested
     // // receive_data_with_parity(8'hDA,8,0,1); //tested
-    // receive_data_with_parity(8'hC2,8,0,1); //tested
+    receive_data_with_parity(8'hC2,8,0,1); //tested
     // receive_data_with_parity(8'h51,8,0,1); //tested
     // receive_data_with_parity(8'h97,8,0,1); //tested
     // receive_data_with_parity(8'h22,8,0,1); //tested
@@ -302,7 +344,34 @@ initial begin
 
     // DATA_BIT 5 EVEN PARITY AND 1 STOP BIT
     setup_reg_mode(CFG_REG_8_BIT,STOP_BIT_1,PARITY_EN,PARITY_EVEN);
-    check_rx_1();
+    test_tx_data(8'hA5);
+    repeat(10000) @(posedge clk);
+    test_tx_data(8'h37);
+    repeat(10000) @(posedge clk); 
+    test_tx_data(8'hB8);
+    repeat(10000) @(posedge clk);
+    test_tx_data(8'hB9);
+    repeat(10000) @(posedge clk);
+    setup_reg_mode(CFG_REG_8_BIT,STOP_BIT_1,PARITY_EN,PARITY_ODD);
+    test_tx_data(8'hB1);
+    repeat(10000) @(posedge clk);
+    test_tx_data(8'hD3);
+    repeat(10000) @(posedge clk); 
+    test_tx_data(8'hC2);
+    repeat(10000) @(posedge clk);
+    test_tx_data(8'h55);
+    repeat(10000) @(posedge clk);
+    setup_reg_mode(CFG_REG_8_BIT,STOP_BIT_1,PARITY_NOT,PARITY_ODD);
+    test_tx_data(8'hB1);
+    repeat(20000) @(posedge clk);
+    test_tx_data(8'hD3);
+    repeat(10000) @(posedge clk); 
+    test_tx_data(8'hC2);
+    repeat(10000) @(posedge clk);
+    test_tx_data(8'h55);
+    repeat(10000) @(posedge clk);
+    // check_rx_1();
+    // check_rx_1();
     //check_rx;
     /////////////////////////////////////////test mode rx/////////////////////////////////
     //check_rx();
@@ -318,55 +387,55 @@ initial begin
     /////////////////////////////////////////test mode tx/////////////////////////////////
     // //test_1
     // //setup_tx_mode(8'h82);
-    setup_tx_mode(8'hA5);
-    check_tx_done;
-    setup_tx_mode(8'h37);
-    check_tx_done;
-    setup_tx_mode(8'hb7);
-    check_tx_done;
-    repeat(10000)begin
-        @(posedge clk);
-    end
-    setup_reg_mode(CFG_REG_8_BIT,STOP_BIT_2,PARITY_EN,PARITY_ODD);
-    setup_tx_mode(8'hA5);
-    check_tx_done;
-    setup_tx_mode(8'h37);
-    check_tx_done;
-    setup_tx_mode(8'hb7);
-    check_tx_done;
-    repeat(10000)begin
-        @(posedge clk);
-    end
-    setup_reg_mode(CFG_REG_7_BIT,STOP_BIT_1,PARITY_NOT,PARITY_ODD);
-    setup_tx_mode(7'b1100101);
-    check_tx_done;
-    setup_tx_mode(7'b1010011);
-    check_tx_done;
-    setup_tx_mode(7'b1111000);
-    check_tx_done;
-    repeat(10000)begin
-        @(posedge clk);
-    end
-    setup_reg_mode(CFG_REG_7_BIT,STOP_BIT_2,PARITY_EN,PARITY_EVEN);
-    setup_tx_mode(7'b1100101);
-    check_tx_done;
-    setup_tx_mode(7'b1010011);
-    check_tx_done;
-    setup_tx_mode(7'b1111000);
-    check_tx_done;
-    repeat(10000)begin
-        @(posedge clk);
-    end
-    setup_reg_mode(CFG_REG_6_BIT,STOP_BIT_1,PARITY_EN,PARITY_EVEN);
-    setup_tx_mode(6'b101001);
-    check_tx_done;
-    setup_tx_mode(6'b111000);
-    check_tx_done;
-    setup_tx_mode(6'b110011);
-    check_tx_done;
-    repeat(10000)begin
-        @(posedge clk);
-    end
+    // setup_tx_mode(8'hA5);
+    // check_tx_done;
+    // setup_tx_mode(8'h37);
+    // check_tx_done;
+    // setup_tx_mode(8'hb7);
+    // check_tx_done;
+    // repeat(10000)begin
+    //     @(posedge clk);
+    // end
+    // setup_reg_mode(CFG_REG_8_BIT,STOP_BIT_2,PARITY_EN,PARITY_ODD);
+    // setup_tx_mode(8'hA5);
+    // check_tx_done;
+    // setup_tx_mode(8'h37);
+    // check_tx_done;
+    // setup_tx_mode(8'hb7);
+    // check_tx_done;
+    // repeat(10000)begin
+    //     @(posedge clk);
+    // end
+    // setup_reg_mode(CFG_REG_7_BIT,STOP_BIT_1,PARITY_NOT,PARITY_ODD);
+    // setup_tx_mode(7'b1100101);
+    // check_tx_done;
+    // setup_tx_mode(7'b1010011);
+    // check_tx_done;
+    // setup_tx_mode(7'b1111000);
+    // check_tx_done;
+    // repeat(10000)begin
+    //     @(posedge clk);
+    // end
+    // setup_reg_mode(CFG_REG_7_BIT,STOP_BIT_2,PARITY_EN,PARITY_EVEN);
+    // setup_tx_mode(7'b1100101);
+    // check_tx_done;
+    // setup_tx_mode(7'b1010011);
+    // check_tx_done;
+    // setup_tx_mode(7'b1111000);
+    // check_tx_done;
+    // repeat(10000)begin
+    //     @(posedge clk);
+    // end
+    // setup_reg_mode(CFG_REG_6_BIT,STOP_BIT_1,PARITY_EN,PARITY_EVEN);
+    // setup_tx_mode(6'b101001);
+    // check_tx_done;
+    // setup_tx_mode(6'b111000);
+    // check_tx_done;
+    // setup_tx_mode(6'b110011);
+    // check_tx_done;
+    // repeat(10000)begin
+    //     @(posedge clk);
+    // end
 
     //////test_tx////////////////////
     $finish;
