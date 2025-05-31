@@ -63,6 +63,7 @@ APB_slave APB_slave_inst (
     .psel (psel),
     .penable(penable),
     .pwrite(pwrite),
+    .pstrb(pstrb),
     .pwdata(pwdata),
     .rdata(rdata),
     .rack(rack),
