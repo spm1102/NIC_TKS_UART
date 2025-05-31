@@ -193,21 +193,6 @@ always_ff @(posedge clk or negedge rst_n) begin
     end
 end
 
-
-// always_ff@(posedge clk or negedge rst_n) begin
-//     if (~rst_n) begin
-//     rx_done_flag <= 0;
-//     end
-//     else begin
-//         if (rx_done_tmp) begin
-//             rx_done_flag <= 1;
-//         end
-//         else if (host_rd) begin
-//             rx_done_flag <= 0;
-//         end
-
-//     end
-// end
 always_ff@(posedge clk or negedge rst_n) begin
     if (~rst_n) begin
     rx_done <= 0;
