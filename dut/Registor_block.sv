@@ -1,4 +1,4 @@
-module Resgistor_block(
+module Registor_block(
     input                               clk,
     input                               rst_n,
 

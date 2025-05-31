@@ -131,7 +131,6 @@ always_ff @(posedge clk or negedge rst_n) begin
     end
     else begin
         if (tick) begin
-            if (tick_cnt == 4'b1111)begin
                 case (current_state) 
                 IDLE: begin
                     if (next_state == START) begin
@@ -139,31 +138,40 @@ always_ff @(posedge clk or negedge rst_n) begin
                         count_data <= 0;
                         tick_cnt <= 0; 
                     end
-                    else begin end
+                    else begin
+                        tick_cnt <= tick_cnt;
+                    end
+                end
+                START: begin
+                    tick_cnt <= tick_cnt + 1;
                 end
                 DATA: begin
+                    if (tick_cnt == 15 ) begin
                     count_data <= count_data + 1;
-                    count_stop <= 0;
                     tick_cnt <= 0;  
+                    end
+                    else begin
+                        tick_cnt <= tick_cnt + 1;
+                    end
+                    count_stop <= 0;
                 end
                 STOP: begin
-                    count_stop <= count_stop + 1;
+                    if (tick_cnt == 15) begin
+                        count_stop <= count_stop + 1;
+                        tick_cnt <= 0; 
+                    end
+                    else begin
+                        tick_cnt <= tick_cnt + 1;
+                    end
                     count_data <= 0;
-                    tick_cnt <= 0;  
                 end
                 default: begin
                     count_stop <= 0;
                     count_data <= 0;
                     tick_cnt <= 0; 
-
                 end
                 endcase
-            end
-            else begin 
-            tick_cnt <= tick_cnt + 1;
-            end
-
-        end
+         end
         else begin end
     end
 end
