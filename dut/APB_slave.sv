@@ -7,6 +7,7 @@ module APB_slave(
     input penable,
     input pwrite,
     input [31:0] pwdata,
+    input [3:0] pstrb,
 
     input  [31:0] rdata,
     input rack,
@@ -28,8 +29,16 @@ module APB_slave(
 //wdata
 logic [31:0] wdata_next;
 logic [31:0] pwdata_next;
+
+logic [31:0] wdata_tmp;
+
+assign wdata_tmp[7:0] = pstrb[0] ? pwdata[7:0] : '0;
+assign wdata_tmp[15:8] = pstrb[1] ? pwdata[15:8] : '0;
+assign wdata_tmp[23:16] = pstrb[2] ? pwdata[23:16] : '0;
+assign wdata_tmp[31:24] = pstrb[3] ? pwdata[31:24] : '0;
+
 assign wdata_next = wr_en ? 0 : wdata;
-assign pwdata_next = (psel & pwrite & penable) ? pwdata : wdata_next;
+assign pwdata_next = (psel & pwrite & penable) ? wdata_tmp : wdata_next;
 always_ff @( posedge pclk, negedge prst_n ) begin 
     if(~prst_n) begin
         wdata <= 0;
@@ -76,6 +85,6 @@ assign pslverr = waddrerr | raddrerr;
 //raddr
 assign raddr = rd_en ? paddr : 0;
 //prdata
-assign prdata = pready ? rdata : 0;
+assign prdata = rack ? rdata : 0;
 
 endmodule

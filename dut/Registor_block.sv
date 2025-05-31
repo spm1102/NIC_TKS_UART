@@ -134,15 +134,16 @@ module Resgistor_block(
     end
 
 
-    always_ff @(posedge clk or negedge rst_n) begin
-        if (~rst_n) begin
-            rack <= 0;
-        end
-        else if (rd_en) rack <= 1;
-        else begin
-            rack <= 0;
-        end
-    end
+    // always_ff @(posedge clk or negedge rst_n) begin
+    //     if (~rst_n) begin
+    //         rack <= 0;
+    //     end
+    //     else if (rd_en) rack <= 1;
+    //     else begin
+    //         rack <= 0;
+    //     end
+    // end
+assign rack = rd_en ? 1 : 0;
 
 
 endmodule
