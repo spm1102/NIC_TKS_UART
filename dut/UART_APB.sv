@@ -79,7 +79,7 @@ APB_slave APB_slave_inst (
     .wr_en(wr_en),
     .rd_en(rd_en)
 );
-Resgistor_block Resgistor_block_inst(
+Registor_block Resgistor_block_inst(
     .clk(clk),
     .rst_n(rst_n),
     
