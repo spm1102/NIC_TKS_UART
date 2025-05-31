@@ -134,7 +134,7 @@ always_ff @(posedge clk or negedge rst_n) begin
         count_stop <= 0;
         rx_shift <= 0;
         parity_calc <= 0;
-        parity_bit <= 0;
+        //parity_bit <= 0;
         parity_error <= 0;
         //rx_done <= 0;
         rx_data <= 0;
@@ -156,15 +156,19 @@ always_ff @(posedge clk or negedge rst_n) begin
                 DATA: begin
                     if (tick_cnt == 15) begin
                         rx_shift[count_data] <= rx;
-                        parity_calc <= parity_calc ^ rx;
                         count_data <= count_data + 1;
+                        // tinh toan parity_bit de so sanh voi rx nhan vao sau
+                        if (parity_type) begin
+                            parity_calc <= parity_calc ^ rx;
+                        end
+                        else parity_calc <= ~(parity_calc ^ rx);
                     end
                 end
 
                 PARITY: begin
                     if (tick_cnt == 15) begin
-                        parity_bit <= (parity_type) ? ~parity_calc : parity_calc;
-                        parity_error <= (rx != ((parity_type) ? ~parity_calc : parity_calc));
+                        //parity_bit <= (parity_type) ? ~parity_calc : parity_calc;
+                        parity_error <= (rx != parity_calc);
                     end
                 end
 
